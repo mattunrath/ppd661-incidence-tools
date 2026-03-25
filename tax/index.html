@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Incidence Explorer | USC PPD 661</title>
+    <style>
+        :root {
+            --usc-cardinal: #990000;
+            --usc-gold: #FFCC00;
+            --usc-gray: #616161;
+            --usc-light-gray: #F5F5F5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--usc-light-gray);
+            color: #333;
+        }
+
+        .header {
+            background-color: var(--usc-cardinal);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            align-self: start;
+        }
+
+        .controls h2 {
+            color: var(--usc-cardinal);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .control-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-item label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--usc-gray);
+            font-size: 0.95rem;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--usc-cardinal);
+        }
+
+        .slider-value {
+            min-width: 45px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .toggle-group {
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid var(--usc-cardinal);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 0.5rem 0.25rem;
+            border: none;
+            background: white;
+            color: var(--usc-cardinal);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--usc-cardinal);
+            color: white;
+        }
+
+        button.reset-btn {
+            width: 100%;
+            background-color: var(--usc-gray);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        button.reset-btn:hover {
+            background-color: #4a4a4a;
+        }
+
+        .graph-area {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+
+        canvas {
+            width: 100%;
+            display: block;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--usc-gray);
+        }
+
+        .legend-swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .summary {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+
+        .summary h2 {
+            color: var(--usc-cardinal);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.75rem;
+        }
+
+        .summary-card {
+            background: var(--usc-light-gray);
+            padding: 0.75rem;
+            border-radius: 4px;
+            border-left: 4px solid var(--usc-gray);
+        }
+
+        .summary-card.cs { border-left-color: rgba(25, 118, 210, 0.8); }
+        .summary-card.ps { border-left-color: rgba(153, 0, 0, 0.7); }
+        .summary-card.tr { border-left-color: rgba(255, 204, 0, 0.9); }
+        .summary-card.dwl { border-left-color: rgba(100, 100, 100, 0.7); }
+        .summary-card.burden { border-left-color: var(--usc-cardinal); }
+
+        .summary-card h3 {
+            font-size: 0.75rem;
+            color: var(--usc-gray);
+            margin-bottom: 0.2rem;
+        }
+
+        .summary-card .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .summary-card .change {
+            font-size: 0.75rem;
+            color: var(--usc-gray);
+            margin-top: 0.15rem;
+        }
+
+        .summary-card .change.negative { color: #c00; }
+        .summary-card .change.positive { color: #2E7D32; }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tax Incidence Explorer</h1>
+        <p>USC PPD 661: Understanding How Tax Burden Is Shared Between Buyers and Sellers</p>
+    </div>
+
+    <div class="container">
+        <div class="main-layout">
+            <div class="controls">
+                <h2>Parameters</h2>
+
+                <div class="control-item">
+                    <label>Initial Equilibrium</label>
+                    <div style="display:flex; gap:0.75rem;">
+                        <div style="flex:1;">
+                            <div style="font-size:0.8rem; color:var(--usc-gray); margin-bottom:0.2rem;">Price ($)</div>
+                            <input type="number" id="eqPrice" value="10" min="1" style="width:100%; padding:0.5rem; border:2px solid #ddd; border-radius:4px; font-size:0.95rem;">
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:0.8rem; color:var(--usc-gray); margin-bottom:0.2rem;">Quantity</div>
+                            <input type="number" id="eqQuantity" value="100" min="1" style="width:100%; padding:0.5rem; border:2px solid #ddd; border-radius:4px; font-size:0.95rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Demand Elasticity</label>
+                    <div class="slider-row">
+                        <span style="font-size:0.8rem">Elastic</span>
+                        <input type="range" id="demandSlope" min="0.1" max="2.0" step="0.05" value="0.5">
+                        <span style="font-size:0.8rem">Inelastic</span>
+                    </div>
+                    <div style="text-align:center; margin-top:0.3rem;">
+                        <span class="slider-value" id="demandSlopeVal"></span>
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Supply Elasticity</label>
+                    <div class="slider-row">
+                        <span style="font-size:0.8rem">Elastic</span>
+                        <input type="range" id="supplySlope" min="0.1" max="2.0" step="0.05" value="0.5">
+                        <span style="font-size:0.8rem">Inelastic</span>
+                    </div>
+                    <div style="text-align:center; margin-top:0.3rem;">
+                        <span class="slider-value" id="supplySlopeVal"></span>
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Per-Unit Tax</label>
+                    <div class="slider-row">
+                        <span style="font-size:0.8rem">$0</span>
+                        <input type="range" id="taxAmount" min="0" max="20" step="0.5" value="0">
+                        <span style="font-size:0.8rem">$20</span>
+                    </div>
+                    <div style="text-align:center; margin-top:0.3rem;">
+                        <span class="slider-value" id="taxAmountVal"></span>
+                    </div>
+                </div>
+
+                <div class="control-item">
+                    <label>Tax Imposed On</label>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" id="btnSellers" onclick="setTaxSide('sellers')">Sellers</button>
+                        <button class="toggle-btn" id="btnBuyers" onclick="setTaxSide('buyers')">Buyers</button>
+                    </div>
+                </div>
+
+                <button class="reset-btn" onclick="resetAll()">Reset</button>
+            </div>
+
+            <div class="graph-area">
+                <canvas id="graph" height="212"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background:rgba(25,118,210,0.3); border:1px solid rgba(25,118,210,0.6);"></div>
+                        Consumer Surplus
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background:rgba(153,0,0,0.25); border:1px solid rgba(153,0,0,0.5);"></div>
+                        Producer Surplus
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background:rgba(255,204,0,0.4); border:1px solid rgba(255,204,0,0.7);"></div>
+                        Tax Revenue
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background:rgba(100,100,100,0.3); border:1px solid rgba(100,100,100,0.5);"></div>
+                        Deadweight Loss
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <h2>Welfare Analysis</h2>
+            <div class="summary-grid">
+                <div class="summary-card cs">
+                    <h3>Consumer Surplus</h3>
+                    <div class="value" id="csValue">—</div>
+                    <div class="change" id="csChange"></div>
+                </div>
+                <div class="summary-card ps">
+                    <h3>Producer Surplus</h3>
+                    <div class="value" id="psValue">—</div>
+                    <div class="change" id="psChange"></div>
+                </div>
+                <div class="summary-card tr">
+                    <h3>Tax Revenue</h3>
+                    <div class="value" id="trValue">—</div>
+                </div>
+                <div class="summary-card dwl">
+                    <h3>Deadweight Loss</h3>
+                    <div class="value" id="dwlValue">—</div>
+                </div>
+                <div class="summary-card burden">
+                    <h3>Consumer Tax Burden</h3>
+                    <div class="value" id="cBurden">—</div>
+                </div>
+                <div class="summary-card burden">
+                    <h3>Producer Tax Burden</h3>
+                    <div class="value" id="pBurden">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Model parameters ──────────────────────────────────────────
+        // Demand: P = A - b*Q   where A = P₀ + b*Q₀
+        // Supply: P = C + d*Q   where C = P₀ - d*Q₀
+        // A and C are derived from user-specified equilibrium + slopes
+
+        let taxSide = 'sellers';
+
+        // ── DOM refs ──────────────────────────────────────────────────
+        const demandSlider = document.getElementById('demandSlope');
+        const supplySlider = document.getElementById('supplySlope');
+        const taxSlider = document.getElementById('taxAmount');
+        const eqPriceInput = document.getElementById('eqPrice');
+        const eqQtyInput = document.getElementById('eqQuantity');
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+
+        // ── Event listeners ───────────────────────────────────────────
+        demandSlider.addEventListener('input', update);
+        supplySlider.addEventListener('input', update);
+        taxSlider.addEventListener('input', update);
+        eqPriceInput.addEventListener('input', update);
+        eqQtyInput.addEventListener('input', update);
+
+        function setTaxSide(side) {
+            taxSide = side;
+            document.getElementById('btnSellers').classList.toggle('active', side === 'sellers');
+            document.getElementById('btnBuyers').classList.toggle('active', side === 'buyers');
+            update();
+        }
+
+        function resetAll() {
+            demandSlider.value = 0.5;
+            supplySlider.value = 0.5;
+            taxSlider.value = 0;
+            eqPriceInput.value = 10;
+            eqQtyInput.value = 100;
+            setTaxSide('sellers');
+        }
+
+        // ── Economics ─────────────────────────────────────────────────
+        function computeEquilibrium(b, d, t, P0user, Q0user) {
+            // Derive intercepts from user-specified equilibrium
+            const A = P0user + b * Q0user;
+            const C = P0user - d * Q0user;
+
+            // Pre-tax equilibrium (equals user-specified values)
+            const Q0 = Q0user;
+            const P0 = P0user;
+
+            // Post-tax equilibrium (tax always creates same wedge regardless of side)
+            const Qt = Math.max(0, (A - C - t) / (b + d));
+            const Pb = A - b * Qt;          // price buyers pay
+            const Ps = Pb - t;              // price sellers receive
+
+            // Consumer surplus = triangle above Pb, below demand, from 0 to Qt
+            // CS = 0.5 * (A - Pb) * Qt
+            const CS = 0.5 * (A - Pb) * Qt;
+            const CS0 = 0.5 * (A - P0) * Q0;
+
+            // Producer surplus = triangle below Ps, above supply, from 0 to Qt
+            // PS = 0.5 * (Ps - C) * Qt
+            const PS = 0.5 * (Ps - C) * Qt;
+            const PS0 = 0.5 * (P0 - C) * Q0;
+
+            // Tax revenue = t * Qt
+            const TR = t * Qt;
+
+            // Deadweight loss = 0.5 * t * (Q0 - Qt)
+            const DWL = 0.5 * t * (Q0 - Qt);
+
+            // Tax burden shares
+            // Consumer burden = (Pb - P0) / t, Producer burden = (P0 - Ps) / t
+            const cBurden = t > 0 ? (Pb - P0) / t : 0;
+            const pBurden = t > 0 ? (P0 - Ps) / t : 0;
+
+            return { A, C, Q0, P0, Qt, Pb, Ps, CS, CS0, PS, PS0, TR, DWL, cBurden, pBurden };
+        }
+
+        // ── Drawing ───────────────────────────────────────────────────
+        function update() {
+            const b = parseFloat(demandSlider.value);
+            const d = parseFloat(supplySlider.value);
+            const t = parseFloat(taxSlider.value);
+            const P0user = parseFloat(eqPriceInput.value) || 10;
+            const Q0user = parseFloat(eqQtyInput.value) || 100;
+
+            // Update slider labels
+            document.getElementById('demandSlopeVal').textContent = `slope = ${b.toFixed(2)}`;
+            document.getElementById('supplySlopeVal').textContent = `slope = ${d.toFixed(2)}`;
+            document.getElementById('taxAmountVal').textContent = `$${t.toFixed(2)}`;
+
+            const eq = computeEquilibrium(b, d, t, P0user, Q0user);
+            draw(b, d, t, eq);
+            updateSummary(eq, t);
+        }
+
+        function draw(b, d, t, eq) {
+            // High-DPI canvas setup
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const W = rect.width;
+            const H = rect.height;
+
+            // Graph margins
+            const ml = 65, mr = 30, mt = 20, mb = 50;
+            const gw = W - ml - mr;
+            const gh = H - mt - mb;
+
+            // Axis ranges centered on the user-specified equilibrium
+            const { A, C } = eq;
+            const P0user = eq.P0;
+            const Q0user = eq.Q0;
+            const maxQ = Q0user * 2;
+            const maxP = P0user * 2;
+
+            // Coordinate transforms: model → pixel
+            function xPx(q) { return ml + (q / maxQ) * gw; }
+            function yPx(p) { return mt + gh - (p / maxP) * gh; }
+
+            // Clear
+            ctx.clearRect(0, 0, W, H);
+
+            // Clip to graph area so nothing draws beyond axes
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(ml, mt, gw, gh);
+            ctx.clip();
+
+            // ── Shaded regions (draw before lines so lines are on top) ──
+
+            if (t > 0) {
+                const { Q0, P0, Qt, Pb, Ps } = eq;
+
+                // Consumer surplus: triangle (0, A) → (Qt, Pb) → (0, Pb)
+                ctx.fillStyle = 'rgba(25, 118, 210, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(0), yPx(A));
+                ctx.lineTo(xPx(Qt), yPx(Pb));
+                ctx.lineTo(xPx(0), yPx(Pb));
+                ctx.closePath();
+                ctx.fill();
+
+                // Producer surplus: triangle (0, C) → (Qt, Ps) → (0, Ps)
+                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(0), yPx(C));
+                ctx.lineTo(xPx(Qt), yPx(Ps));
+                ctx.lineTo(xPx(0), yPx(Ps));
+                ctx.closePath();
+                ctx.fill();
+
+                // Tax revenue: rectangle from Qt width back to y-axis? No — rectangle
+                // between Pb and Ps from Q=0 to Q=Qt
+                ctx.fillStyle = 'rgba(255, 204, 0, 0.35)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(0), yPx(Pb));
+                ctx.lineTo(xPx(Qt), yPx(Pb));
+                ctx.lineTo(xPx(Qt), yPx(Ps));
+                ctx.lineTo(xPx(0), yPx(Ps));
+                ctx.closePath();
+                ctx.fill();
+
+                // Deadweight loss: triangle (Qt, Pb) → (Q0, P0) → (Qt, Ps)
+                ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(Qt), yPx(Pb));
+                ctx.lineTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(xPx(Qt), yPx(Ps));
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // No tax: show full CS and PS
+                const { Q0, P0 } = eq;
+
+                // Consumer surplus
+                ctx.fillStyle = 'rgba(25, 118, 210, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(0), yPx(A));
+                ctx.lineTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(xPx(0), yPx(P0));
+                ctx.closePath();
+                ctx.fill();
+
+                // Producer surplus
+                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.moveTo(xPx(0), yPx(C));
+                ctx.lineTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(xPx(0), yPx(P0));
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Restore from clip so axes and labels can draw outside graph area
+            ctx.restore();
+
+            // ── Axes ──
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(ml, mt);
+            ctx.lineTo(ml, mt + gh);
+            ctx.lineTo(ml + gw, mt + gh);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '600 14px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Quantity', ml + gw / 2, H - 8);
+
+            ctx.save();
+            ctx.translate(18, mt + gh / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Price ($)', 0, 0);
+            ctx.restore();
+
+            // Clip curves to graph area
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(ml, mt, gw, gh);
+            ctx.clip();
+
+            // ── Demand curve (original) ──
+            ctx.strokeStyle = '#1976D2';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            const qMaxD = A / b;  // where demand hits Q axis
+            ctx.moveTo(xPx(0), yPx(A));
+            ctx.lineTo(xPx(Math.min(qMaxD, maxQ)), yPx(Math.max(A - b * maxQ, 0)));
+            ctx.stroke();
+
+            // Demand label
+            ctx.fillStyle = '#1976D2';
+            ctx.font = '700 14px -apple-system, BlinkMacSystemFont, sans-serif';
+            const dLabelQ = Math.min(qMaxD * 0.85, maxQ * 0.9);
+            const dLabelP = A - b * dLabelQ;
+            ctx.fillText('D', xPx(dLabelQ) + 12, yPx(dLabelP));
+
+            // ── Supply curve (original) ──
+            ctx.strokeStyle = '#990000';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(xPx(0), yPx(C));
+            ctx.lineTo(xPx(maxQ), yPx(C + d * maxQ));
+            ctx.stroke();
+
+            // Supply label
+            ctx.fillStyle = '#990000';
+            const sLabelQ = maxQ * 0.85;
+            const sLabelP = C + d * sLabelQ;
+            if (sLabelP < maxP) {
+                ctx.fillText('S', xPx(sLabelQ) + 12, yPx(sLabelP) - 10);
+            }
+
+            // ── Shifted curve (dashed) ──
+            if (t > 0) {
+                ctx.setLineDash([6, 4]);
+                ctx.lineWidth = 2;
+
+                if (taxSide === 'sellers') {
+                    // Supply shifts up by t
+                    ctx.strokeStyle = '#990000';
+                    ctx.beginPath();
+                    ctx.moveTo(xPx(0), yPx(C + t));
+                    ctx.lineTo(xPx(maxQ), yPx(C + t + d * maxQ));
+                    ctx.stroke();
+
+                    // Label
+                    ctx.fillStyle = '#990000';
+                    ctx.font = '700 13px -apple-system, BlinkMacSystemFont, sans-serif';
+                    const slQ = maxQ * 0.7;
+                    const slP = C + t + d * slQ;
+                    if (slP < maxP) {
+                        ctx.fillText('S + tax', xPx(slQ) + 12, yPx(slP) - 10);
+                    }
+                } else {
+                    // Demand shifts down by t
+                    ctx.strokeStyle = '#1976D2';
+                    ctx.beginPath();
+                    const newIntercept = A - t;
+                    const qMaxDNew = newIntercept / b;
+                    ctx.moveTo(xPx(0), yPx(newIntercept));
+                    ctx.lineTo(xPx(Math.min(qMaxDNew, maxQ)), yPx(Math.max(newIntercept - b * maxQ, 0)));
+                    ctx.stroke();
+
+                    // Label
+                    ctx.fillStyle = '#1976D2';
+                    ctx.font = '700 13px -apple-system, BlinkMacSystemFont, sans-serif';
+                    const dlQ = Math.min(qMaxDNew * 0.85, maxQ * 0.75);
+                    const dlP = newIntercept - b * dlQ;
+                    ctx.fillText('D \u2212 tax', xPx(dlQ) + 12, yPx(dlP) + 16);
+                }
+
+                ctx.setLineDash([]);
+            }
+
+            // ── Equilibrium points and dashed lines ──
+            const { Q0, P0, Qt, Pb, Ps } = eq;
+
+            // Pre-tax equilibrium dot
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(xPx(Q0), yPx(P0), 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // E₀ label (directly above the dot)
+            ctx.font = '700 13px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText('E\u2080', xPx(Q0), yPx(P0) - 12);
+
+            if (t > 0) {
+                // Post-tax equilibrium dot and E₁ label
+                // When tax on sellers: shifted S meets D at (Qt, Pb)
+                // When tax on buyers: shifted D meets S at (Qt, Ps)
+                const e1Price = taxSide === 'sellers' ? Pb : Ps;
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(xPx(Qt), yPx(e1Price), 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.font = '700 13px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.fillText('E\u2081', xPx(Qt), yPx(e1Price) - 12);
+
+                // Dashed lines from post-tax equilibrium to axes
+                ctx.setLineDash([4, 3]);
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 1;
+
+                // Horizontal from Pb to y-axis
+                ctx.beginPath();
+                ctx.moveTo(xPx(Qt), yPx(Pb));
+                ctx.lineTo(ml, yPx(Pb));
+                ctx.stroke();
+
+                // Horizontal from Ps to y-axis
+                ctx.beginPath();
+                ctx.moveTo(xPx(Qt), yPx(Ps));
+                ctx.lineTo(ml, yPx(Ps));
+                ctx.stroke();
+
+                // Vertical from Qt to x-axis
+                ctx.beginPath();
+                ctx.moveTo(xPx(Qt), yPx(Pb));
+                ctx.lineTo(xPx(Qt), mt + gh);
+                ctx.stroke();
+
+                // Dashed lines for pre-tax equilibrium
+                ctx.beginPath();
+                ctx.moveTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(ml, yPx(P0));
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(xPx(Q0), mt + gh);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+
+                // Restore from clip for labels outside graph area
+                ctx.restore();
+
+                // Tax wedge bracket on y-axis
+                const bracketX = ml - 6;
+                ctx.strokeStyle = var_cardinal();
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bracketX - 4, yPx(Pb));
+                ctx.lineTo(bracketX, yPx(Pb));
+                ctx.lineTo(bracketX, yPx(Ps));
+                ctx.lineTo(bracketX - 4, yPx(Ps));
+                ctx.stroke();
+
+                // "t" label for bracket
+                ctx.fillStyle = var_cardinal();
+                ctx.font = '700 12px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('t', bracketX - 7, (yPx(Pb) + yPx(Ps)) / 2 + 4);
+
+                // Price labels on y-axis (with actual values)
+                ctx.textAlign = 'right';
+                ctx.font = '600 11px -apple-system, BlinkMacSystemFont, sans-serif';
+
+                ctx.fillStyle = '#1976D2';
+                ctx.fillText('$' + Pb.toFixed(1), ml - 18, yPx(Pb) + 4);
+
+                ctx.fillStyle = '#990000';
+                ctx.fillText('$' + Ps.toFixed(1), ml - 18, yPx(Ps) + 4);
+
+                ctx.fillStyle = '#666';
+                ctx.fillText('$' + P0.toFixed(1), ml - 18, yPx(P0) + 4);
+
+                // Quantity labels on x-axis (with actual values)
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#666';
+                ctx.font = '600 11px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(Q0.toFixed(1), xPx(Q0), mt + gh + 18);
+                ctx.fillText(Qt.toFixed(1), xPx(Qt), mt + gh + 18);
+
+            } else {
+                // Restore from clip for labels outside graph area
+                ctx.restore();
+
+                // Pre-tax only: dashed lines to axes
+                ctx.setLineDash([4, 3]);
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.moveTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(ml, yPx(P0));
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(xPx(Q0), yPx(P0));
+                ctx.lineTo(xPx(Q0), mt + gh);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+
+                // Labels (with actual values)
+                ctx.textAlign = 'right';
+                ctx.font = '600 11px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillStyle = '#666';
+                ctx.fillText('$' + P0.toFixed(1), ml - 18, yPx(P0) + 4);
+
+                ctx.textAlign = 'center';
+                ctx.fillText(Q0.toFixed(1), xPx(Q0), mt + gh + 18);
+            }
+        }
+
+        function var_cardinal() { return '#990000'; }
+
+        function updateSummary(eq, t) {
+            const fmt = (v) => '$' + v.toFixed(1);
+
+            if (t > 0) {
+                document.getElementById('csValue').textContent = fmt(eq.CS);
+                const csDiff = eq.CS - eq.CS0;
+                const csEl = document.getElementById('csChange');
+                csEl.textContent = `Change: ${csDiff >= 0 ? '+' : ''}${fmt(csDiff)}`;
+                csEl.className = 'change ' + (csDiff < 0 ? 'negative' : 'positive');
+
+                document.getElementById('psValue').textContent = fmt(eq.PS);
+                const psDiff = eq.PS - eq.PS0;
+                const psEl = document.getElementById('psChange');
+                psEl.textContent = `Change: ${psDiff >= 0 ? '+' : ''}${fmt(psDiff)}`;
+                psEl.className = 'change ' + (psDiff < 0 ? 'negative' : 'positive');
+
+                document.getElementById('trValue').textContent = fmt(eq.TR);
+                document.getElementById('dwlValue').textContent = fmt(eq.DWL);
+                document.getElementById('cBurden').textContent = (eq.cBurden * 100).toFixed(1) + '%';
+                document.getElementById('pBurden').textContent = (eq.pBurden * 100).toFixed(1) + '%';
+            } else {
+                document.getElementById('csValue').textContent = fmt(eq.CS0);
+                document.getElementById('csChange').textContent = '';
+                document.getElementById('csChange').className = 'change';
+
+                document.getElementById('psValue').textContent = fmt(eq.PS0);
+                document.getElementById('psChange').textContent = '';
+                document.getElementById('psChange').className = 'change';
+
+                document.getElementById('trValue').textContent = '$0.0';
+                document.getElementById('dwlValue').textContent = '$0.0';
+                document.getElementById('cBurden').textContent = '—';
+                document.getElementById('pBurden').textContent = '—';
+            }
+        }
+
+        // ── Resize handling ───────────────────────────────────────────
+        window.addEventListener('resize', update);
+
+        // ── Initial draw ──────────────────────────────────────────────
+        update();
+    </script>
+</body>
+</html>
