@@ -320,12 +320,8 @@
                         Producer Surplus
                     </div>
                     <div class="legend-item">
-                        <div class="legend-swatch" style="background:rgba(25,118,210,0.4); border:1px solid rgba(25,118,210,0.7);"></div>
-                        Consumer's Share
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background:rgba(153,0,0,0.35); border:1px solid rgba(153,0,0,0.6);"></div>
-                        Producer's Share
+                        <div class="legend-swatch" style="background:rgba(255,204,0,0.4); border:1px solid rgba(255,204,0,0.7);"></div>
+                        Gov't Cost
                     </div>
                     <div class="legend-item">
                         <div class="legend-swatch" style="background:rgba(100,100,100,0.3); border:1px solid rgba(100,100,100,0.5);"></div>
@@ -523,24 +519,13 @@
                 ctx.closePath();
                 ctx.fill();
 
-                // Government cost: split rectangle at P₀ to show buyer vs seller share
-                // Consumer's share (P₀ down to Pb) — darker blue
-                ctx.fillStyle = 'rgba(25, 118, 210, 0.4)';
-                ctx.beginPath();
-                ctx.moveTo(xPx(0), yPx(P0));
-                ctx.lineTo(xPx(Qs), yPx(P0));
-                ctx.lineTo(xPx(Qs), yPx(Pb));
-                ctx.lineTo(xPx(0), yPx(Pb));
-                ctx.closePath();
-                ctx.fill();
-
-                // Producer's share (Ps down to P₀) — darker red
-                ctx.fillStyle = 'rgba(153, 0, 0, 0.35)';
+                // Government cost: rectangle between Ps and Pb from Q=0 to Q=Qs
+                ctx.fillStyle = 'rgba(255, 204, 0, 0.35)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(Ps));
                 ctx.lineTo(xPx(Qs), yPx(Ps));
-                ctx.lineTo(xPx(Qs), yPx(P0));
-                ctx.lineTo(xPx(0), yPx(P0));
+                ctx.lineTo(xPx(Qs), yPx(Pb));
+                ctx.lineTo(xPx(0), yPx(Pb));
                 ctx.closePath();
                 ctx.fill();
 
