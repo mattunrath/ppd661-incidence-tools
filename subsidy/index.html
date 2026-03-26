@@ -315,7 +315,7 @@
                         <div class="legend-swatch" style="background:rgba(25,118,210,0.3); border:1px solid rgba(25,118,210,0.6);"></div>
                         Consumer Surplus
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item" id="legendPS" style="cursor:pointer;">
                         <div class="legend-swatch" style="background:rgba(153,0,0,0.25); border:1px solid rgba(153,0,0,0.5);"></div>
                         Producer Surplus
                     </div>
@@ -371,6 +371,7 @@
         // A and C are derived from user-specified equilibrium + slopes
 
         let subsidySide = 'sellers';
+        let highlightPS = false;
 
         // ── DOM refs ──────────────────────────────────────────────────
         const demandSlider = document.getElementById('demandSlope');
@@ -387,6 +388,9 @@
         subsidySlider.addEventListener('input', update);
         eqPriceInput.addEventListener('input', update);
         eqQtyInput.addEventListener('input', update);
+
+        document.getElementById('legendPS').addEventListener('mouseenter', () => { highlightPS = true; update(); });
+        document.getElementById('legendPS').addEventListener('mouseleave', () => { highlightPS = false; update(); });
 
         function setSubsidySide(side) {
             subsidySide = side;
@@ -511,13 +515,18 @@
                 ctx.fill();
 
                 // Producer surplus: triangle (0, C) → (Qs, Ps) → (0, Ps)
-                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.fillStyle = highlightPS ? 'rgba(153, 0, 0, 0.45)' : 'rgba(153, 0, 0, 0.2)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(C));
                 ctx.lineTo(xPx(Qs), yPx(Ps));
                 ctx.lineTo(xPx(0), yPx(Ps));
                 ctx.closePath();
                 ctx.fill();
+                if (highlightPS) {
+                    ctx.strokeStyle = 'rgba(153, 0, 0, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
 
                 // Government cost: rectangle between Ps and Pb from Q=0 to Q=Qs
                 ctx.fillStyle = 'rgba(255, 204, 0, 0.35)';
@@ -551,13 +560,18 @@
                 ctx.fill();
 
                 // Producer surplus
-                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.fillStyle = highlightPS ? 'rgba(153, 0, 0, 0.45)' : 'rgba(153, 0, 0, 0.2)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(C));
                 ctx.lineTo(xPx(Q0), yPx(P0));
                 ctx.lineTo(xPx(0), yPx(P0));
                 ctx.closePath();
                 ctx.fill();
+                if (highlightPS) {
+                    ctx.strokeStyle = 'rgba(153, 0, 0, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
             }
 
             // Restore from clip so axes and labels can draw outside graph area
