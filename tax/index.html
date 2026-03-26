@@ -311,19 +311,19 @@
             <div class="graph-area">
                 <canvas id="graph" height="212"></canvas>
                 <div class="legend">
-                    <div class="legend-item">
+                    <div class="legend-item" id="legendCS" style="cursor:pointer;">
                         <div class="legend-swatch" style="background:rgba(25,118,210,0.3); border:1px solid rgba(25,118,210,0.6);"></div>
                         Consumer Surplus
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item" id="legendPS" style="cursor:pointer;">
                         <div class="legend-swatch" style="background:rgba(153,0,0,0.25); border:1px solid rgba(153,0,0,0.5);"></div>
                         Producer Surplus
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item" id="legendTR" style="cursor:pointer;">
                         <div class="legend-swatch" style="background:rgba(255,204,0,0.4); border:1px solid rgba(255,204,0,0.7);"></div>
                         Tax Revenue
                     </div>
-                    <div class="legend-item">
+                    <div class="legend-item" id="legendDWL" style="cursor:pointer;">
                         <div class="legend-swatch" style="background:rgba(100,100,100,0.3); border:1px solid rgba(100,100,100,0.5);"></div>
                         Deadweight Loss
                     </div>
@@ -371,6 +371,7 @@
         // A and C are derived from user-specified equilibrium + slopes
 
         let taxSide = 'sellers';
+        const hl = { CS: false, PS: false, TR: false, DWL: false };
 
         // ── DOM refs ──────────────────────────────────────────────────
         const demandSlider = document.getElementById('demandSlope');
@@ -387,6 +388,12 @@
         taxSlider.addEventListener('input', update);
         eqPriceInput.addEventListener('input', update);
         eqQtyInput.addEventListener('input', update);
+
+        ['CS', 'PS', 'TR', 'DWL'].forEach(key => {
+            const el = document.getElementById('legend' + key);
+            el.addEventListener('mouseenter', () => { hl[key] = true; update(); });
+            el.addEventListener('mouseleave', () => { hl[key] = false; update(); });
+        });
 
         function setTaxSide(side) {
             taxSide = side;
@@ -503,26 +510,35 @@
                 const { Q0, P0, Qt, Pb, Ps } = eq;
 
                 // Consumer surplus: triangle (0, A) → (Qt, Pb) → (0, Pb)
-                ctx.fillStyle = 'rgba(25, 118, 210, 0.25)';
+                ctx.fillStyle = hl.CS ? 'rgba(25, 118, 210, 0.5)' : 'rgba(25, 118, 210, 0.25)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(A));
                 ctx.lineTo(xPx(Qt), yPx(Pb));
                 ctx.lineTo(xPx(0), yPx(Pb));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.CS) {
+                    ctx.strokeStyle = 'rgba(25, 118, 210, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
 
                 // Producer surplus: triangle (0, C) → (Qt, Ps) → (0, Ps)
-                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.fillStyle = hl.PS ? 'rgba(153, 0, 0, 0.45)' : 'rgba(153, 0, 0, 0.2)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(C));
                 ctx.lineTo(xPx(Qt), yPx(Ps));
                 ctx.lineTo(xPx(0), yPx(Ps));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.PS) {
+                    ctx.strokeStyle = 'rgba(153, 0, 0, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
 
-                // Tax revenue: rectangle from Qt width back to y-axis? No — rectangle
-                // between Pb and Ps from Q=0 to Q=Qt
-                ctx.fillStyle = 'rgba(255, 204, 0, 0.35)';
+                // Tax revenue: rectangle between Pb and Ps from Q=0 to Q=Qt
+                ctx.fillStyle = hl.TR ? 'rgba(255, 204, 0, 0.65)' : 'rgba(255, 204, 0, 0.35)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(Pb));
                 ctx.lineTo(xPx(Qt), yPx(Pb));
@@ -530,36 +546,56 @@
                 ctx.lineTo(xPx(0), yPx(Ps));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.TR) {
+                    ctx.strokeStyle = 'rgba(200, 160, 0, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
 
                 // Deadweight loss: triangle (Qt, Pb) → (Q0, P0) → (Qt, Ps)
-                ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+                ctx.fillStyle = hl.DWL ? 'rgba(100, 100, 100, 0.55)' : 'rgba(100, 100, 100, 0.3)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(Qt), yPx(Pb));
                 ctx.lineTo(xPx(Q0), yPx(P0));
                 ctx.lineTo(xPx(Qt), yPx(Ps));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.DWL) {
+                    ctx.strokeStyle = 'rgba(80, 80, 80, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
             } else {
                 // No tax: show full CS and PS
                 const { Q0, P0 } = eq;
 
                 // Consumer surplus
-                ctx.fillStyle = 'rgba(25, 118, 210, 0.25)';
+                ctx.fillStyle = hl.CS ? 'rgba(25, 118, 210, 0.5)' : 'rgba(25, 118, 210, 0.25)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(A));
                 ctx.lineTo(xPx(Q0), yPx(P0));
                 ctx.lineTo(xPx(0), yPx(P0));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.CS) {
+                    ctx.strokeStyle = 'rgba(25, 118, 210, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
 
                 // Producer surplus
-                ctx.fillStyle = 'rgba(153, 0, 0, 0.2)';
+                ctx.fillStyle = hl.PS ? 'rgba(153, 0, 0, 0.45)' : 'rgba(153, 0, 0, 0.2)';
                 ctx.beginPath();
                 ctx.moveTo(xPx(0), yPx(C));
                 ctx.lineTo(xPx(Q0), yPx(P0));
                 ctx.lineTo(xPx(0), yPx(P0));
                 ctx.closePath();
                 ctx.fill();
+                if (hl.PS) {
+                    ctx.strokeStyle = 'rgba(153, 0, 0, 0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
             }
 
             // Restore from clip so axes and labels can draw outside graph area
